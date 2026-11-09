@@ -17,6 +17,10 @@ Por eso, cuando aparece el backend, **el front casi no muta — solo cambia a qu
 
 **Stack único de base:** `Next.js + SST + AWS`. No hay ningún escalón donde tires todo y empieces de cero.
 
+> **Nota (nov. 2026):** los proyectos de Nivel 0-1 (Aetern y el portafolio) usan **Terraform** en vez
+> de SST, con state remoto en `tfstate-262623998832`. Donde esta guía dice `sst.aws.*`, en Nivel 0-1 el
+> equivalente es `site/deploy/terraform`. La escalera de niveles no cambia.
+
 ---
 
 ## La escalera

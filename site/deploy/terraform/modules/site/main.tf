@@ -29,8 +29,8 @@ resource "aws_cloudfront_origin_access_control" "site" {
   signing_protocol                  = "sigv4"
 }
 
-# Reescribe /ruta/ -> /ruta/index.html (export estático). Los assets con
-# extensión (.pdf, .png) pasan sin tocar.
+# Redirige www -> dominio principal y reescribe /ruta/ -> /ruta/index.html
+# (export estático). Los assets con extensión (.pdf, .png) pasan sin tocar.
 resource "aws_cloudfront_function" "rewrite" {
   name    = "${var.name_prefix}-rewrite-index"
   runtime = "cloudfront-js-2.0"
@@ -39,6 +39,14 @@ resource "aws_cloudfront_function" "rewrite" {
     function handler(event) {
       var req = event.request;
       var uri = req.uri;
+      var host = req.headers.host ? req.headers.host.value : "";
+      if (host === "www.${var.domain_name}") {
+        return {
+          statusCode: 301,
+          statusDescription: "Moved Permanently",
+          headers: { location: { value: "https://${var.domain_name}" + uri } },
+        };
+      }
       if (uri.endsWith("/")) {
         req.uri = uri + "index.html";
       } else if (uri.lastIndexOf(".") < uri.lastIndexOf("/")) {
@@ -47,6 +55,58 @@ resource "aws_cloudfront_function" "rewrite" {
       return req;
     }
   EOT
+}
+
+# ─── Cabeceras de seguridad ──────────────────────────────────────────────────
+# Next.js en export estático requiere 'unsafe-inline' para sus scripts de hidratación.
+locals {
+  csp = join("; ", [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "connect-src 'self' ${var.form_origin}",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ])
+}
+
+resource "aws_cloudfront_response_headers_policy" "security" {
+  name = "${var.name_prefix}-security-headers"
+
+  security_headers_config {
+    strict_transport_security {
+      access_control_max_age_sec = 63072000
+      include_subdomains         = true
+      override                   = true
+    }
+    content_type_options {
+      override = true
+    }
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+    referrer_policy {
+      referrer_policy = "strict-origin-when-cross-origin"
+      override        = true
+    }
+    content_security_policy {
+      content_security_policy = local.csp
+      override                = true
+    }
+  }
+
+  custom_headers_config {
+    items {
+      header   = "Permissions-Policy"
+      value    = "camera=(), microphone=(), geolocation=()"
+      override = true
+    }
+  }
 }
 
 # ─── Dominio: ACM + validación DNS + alias (todo por Route 53) ───────────────
@@ -113,12 +173,13 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   default_cache_behavior {
-    target_origin_id       = "s3-${aws_s3_bucket.site.id}"
-    viewer_protocol_policy  = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD"]
-    cached_methods         = ["GET", "HEAD"]
-    compress               = true
-    cache_policy_id        = "658327ea-f89d-4fab-a63d-7e88639e58f6" # Managed-CachingOptimized
+    target_origin_id           = "s3-${aws_s3_bucket.site.id}"
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    compress                   = true
+    cache_policy_id            = "658327ea-f89d-4fab-a63d-7e88639e58f6" # Managed-CachingOptimized
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
 
     function_association {
       event_type   = "viewer-request"
@@ -172,6 +233,21 @@ resource "aws_route53_record" "alias" {
     zone_id                = "Z2FDTNDATAQYW2" # zona fija de CloudFront
     evaluate_target_health = false
   }
+}
+
+# CAA: solo Amazon (ACM) puede emitir certificados para el dominio y sus subdominios.
+resource "aws_route53_record" "caa" {
+  count   = local.has_domain ? 1 : 0
+  zone_id = data.aws_route53_zone.this[0].zone_id
+  name    = var.domain_name
+  type    = "CAA"
+  ttl     = 3600
+  records = [
+    "0 issue \"amazon.com\"",
+    "0 issue \"amazontrust.com\"",
+    "0 issue \"awstrust.com\"",
+    "0 issue \"amazonaws.com\"",
+  ]
 }
 
 # ─── Política del bucket: solo esta distribución de CloudFront puede leer ─────

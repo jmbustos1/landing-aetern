@@ -19,6 +19,12 @@ cómo se **conecta el dominio** y cómo se **destruye** todo.
   (Origin Access Control). Una CloudFront Function reescribe `/ruta/` → `/ruta/index.html`.
 - **Formulario**: sin servidor propio. Una Lambda con Function URL guarda cada
   mensaje como JSON en un bucket S3 y manda un aviso por SES.
+- **Seguridad**: CloudFront agrega HSTS, CSP, `X-Frame-Options` y
+  `X-Content-Type-Options`; `www` redirige al dominio principal; el registro CAA
+  limita qué autoridad emite certificados, y el formulario solo acepta peticiones
+  desde el dominio propio.
+- **Subdominios**: `jose.aetern.dev` (portafolio) vive en esta misma zona, con su
+  propio Terraform en el repo `mi-portafolio`. El HSTS y el CAA de este dominio lo cubren.
 - **Costos**: con tráfico bajo es prácticamente free-tier. `terraform destroy`
   borra todo → $0. Incluye una **alerta de presupuesto** (módulo `budget`).
 
@@ -34,7 +40,29 @@ cómo se **conecta el dominio** y cómo se **destruye** todo.
 
 ---
 
-## 3. Levantar la infra (primera vez)
+## 3. State remoto (una sola vez por cuenta)
+
+El state vive en S3, versionado y cifrado, para no depender de un solo disco. El
+bucket lo comparten Aetern y el portafolio, cada uno con su propio `key`:
+
+```bash
+B=tfstate-262623998832
+aws s3api create-bucket --bucket $B --region us-east-1 --profile <perfil>
+aws s3api put-bucket-versioning --bucket $B --versioning-configuration Status=Enabled --profile <perfil>
+aws s3api put-bucket-encryption --bucket $B --profile <perfil> --server-side-encryption-configuration \
+  '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+aws s3api put-public-access-block --bucket $B --profile <perfil> --public-access-block-configuration \
+  BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+```
+
+Para pasar un state local existente al bucket:
+
+```bash
+cd deploy/terraform
+AWS_PROFILE=<perfil> terraform init -migrate-state
+```
+
+## 3.1 Levantar la infra (primera vez)
 
 ```bash
 cd deploy/terraform

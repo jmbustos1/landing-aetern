@@ -61,6 +61,14 @@ resource "aws_iam_role_policy_attachment" "form_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# SES exige permiso sobre las identidades de origen y de destino (en sandbox).
+locals {
+  ses_identities = concat(
+    aws_ses_domain_identity.domain[*].arn,
+    aws_ses_email_identity.notify[*].arn,
+  )
+}
+
 # Solo escribir mensajes en su bucket y mandar correo por SES. Nada más.
 resource "aws_iam_role_policy" "form" {
   name = "${var.name_prefix}-form-policy"
@@ -68,23 +76,27 @@ resource "aws_iam_role_policy" "form" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = ["s3:PutObject"]
-        Resource = ["${aws_s3_bucket.submissions.arn}/*"]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["ses:SendEmail"]
-        Resource = ["*"]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["dynamodb:UpdateItem"]
-        Resource = [aws_dynamodb_table.ratelimit.arn]
-      }
-    ]
+    Statement = concat(
+      [
+        {
+          Effect   = "Allow"
+          Action   = ["s3:PutObject"]
+          Resource = ["${aws_s3_bucket.submissions.arn}/*"]
+        },
+        {
+          Effect   = "Allow"
+          Action   = ["dynamodb:UpdateItem"]
+          Resource = [aws_dynamodb_table.ratelimit.arn]
+        },
+      ],
+      length(local.ses_identities) > 0 ? [
+        {
+          Effect   = "Allow"
+          Action   = ["ses:SendEmail"]
+          Resource = local.ses_identities
+        },
+      ] : [],
+    )
   })
 }
 
@@ -134,7 +146,7 @@ resource "aws_lambda_function_url" "form" {
   authorization_type = "NONE"
 
   cors {
-    allow_origins = ["*"]
+    allow_origins = var.domain_name == "" ? ["*"] : ["https://${var.domain_name}"]
     allow_methods = ["POST"]
     allow_headers = ["content-type"]
     max_age       = 3600
@@ -197,14 +209,14 @@ resource "aws_route53_record" "spf" {
   allow_overwrite = true
 }
 
-# DMARC: política de monitoreo (p=none) con reportes al correo destino.
+# DMARC: el correo sin autenticar va a spam. DKIM de SES ya pasa; reportes al correo destino.
 resource "aws_route53_record" "dmarc" {
   count   = var.domain_name == "" ? 0 : 1
   zone_id = data.aws_route53_zone.domain[0].zone_id
   name    = "_dmarc.${var.domain_name}"
   type    = "TXT"
   ttl     = 600
-  records = ["v=DMARC1; p=none; rua=mailto:${var.notify_email}"]
+  records = ["v=DMARC1; p=quarantine; rua=mailto:${var.notify_email}"]
 }
 
 # Espera a que SES confirme la verificación del dominio.

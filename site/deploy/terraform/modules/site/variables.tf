@@ -12,3 +12,9 @@ variable "domain_name" {
   type        = string
   default     = ""
 }
+
+variable "form_origin" {
+  description = "Origen del endpoint del formulario, permitido por la CSP en connect-src"
+  type        = string
+  default     = ""
+}

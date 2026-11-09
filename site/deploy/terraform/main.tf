@@ -1,4 +1,15 @@
 terraform {
+  required_version = ">= 1.10"
+
+  # State remoto compartido (ver deploy/README.md §3). Un key por proyecto.
+  backend "s3" {
+    bucket       = "tfstate-262623998832"
+    key          = "aetern/terraform.tfstate"
+    region       = "us-east-1"
+    encrypt      = true
+    use_lockfile = true
+  }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -30,6 +41,7 @@ module "site" {
   name_prefix = local.name_prefix
   bucket_name = "${local.name_prefix}-site-${local.suffix}"
   domain_name = var.domain_name
+  form_origin = trimsuffix(module.form.function_url, "/")
 }
 
 # ─── Formulario: Lambda Function URL -> S3 + SES ─────────────────────────────
