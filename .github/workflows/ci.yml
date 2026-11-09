@@ -13,6 +13,7 @@ jobs:
         working-directory: site
     steps:
       - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
       - uses: actions/setup-node@v4
         with:
           node-version: 22
