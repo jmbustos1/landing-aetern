@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Mark } from "../../logo";
 import { CASES } from "../data";
+import FlowAnimation from "./flow-animation";
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
@@ -165,6 +166,19 @@ export default function CaseView({ slug }: { slug: string }) {
           </div>
         </section>
 
+        {slug === "exwood" && (
+          <section className="reveal mt-20 grid gap-8 md:grid-cols-[1fr_2fr]">
+            <div>
+              <Eyebrow>En movimiento</Eyebrow>
+              <h2 className="mt-4 font-serif text-2xl text-bright">Del QR a rodar</h2>
+              <p className="mt-4 text-sm text-body/70">
+                El recorrido de una orden entre el teléfono y el scooter, en cámara lenta.
+              </p>
+            </div>
+            <FlowAnimation />
+          </section>
+        )}
+
         {/* Proceso */}
         <section className="reveal mt-20 grid gap-8 md:grid-cols-[1fr_2fr]">
           <div>
@@ -246,7 +260,7 @@ export default function CaseView({ slug }: { slug: string }) {
             </a>
             <a
               href="/#cta"
-              className="border border-plaster/40 px-6 py-3 text-sm text-bright transition-colors duration-300 hover:bg-plaster hover:text-charcoal"
+              className="press border border-plaster/40 px-6 py-3 text-sm text-bright hover:bg-plaster hover:text-charcoal"
             >
               Hablemos
             </a>

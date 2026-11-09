@@ -214,9 +214,12 @@ const FROM_BY_PRODUCT: Record<string, string> = {
 // Vacío en dev: el form simula el envío para poder probar la UI.
 const FORM_ENDPOINT = process.env.NEXT_PUBLIC_FORM_ENDPOINT || "";
 
+// Sin intervalos iguales: en tres columnas, la grilla entra como una ola y no como un metrónomo.
+const REVEAL_DELAY = ["", "lg:[--reveal-delay:80ms]", "lg:[--reveal-delay:130ms]"];
+
 export default function Page() {
   const [scrolled, setScrolled] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error" | "limited">("idle");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -270,7 +273,7 @@ export default function Page() {
 
       {/* ───── Nav ───── */}
       <header
-        className={`sticky top-0 z-50 transition-all duration-500 ${
+        className={`sticky top-0 z-50 transition-[background-color,border-color] duration-300 ${
           scrolled ? "border-b hair bg-charcoal/95 backdrop-blur-sm" : "bg-transparent"
         }`}
       >
@@ -298,7 +301,7 @@ export default function Page() {
           </div>
           <a
             href="#cta"
-            className="border hair px-5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-body transition-colors duration-300 hover:bg-body hover:text-charcoal"
+            className="press border hair px-5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-body hover:bg-body hover:text-charcoal"
           >
             Hablemos
           </a>
@@ -348,7 +351,7 @@ export default function Page() {
             <div className="mt-10 flex flex-wrap items-center gap-6">
               <a
                 href="#cta"
-                className="border border-plaster/40 px-7 py-3 text-sm text-bright transition-colors duration-300 hover:bg-plaster hover:text-charcoal"
+                className="press border border-plaster/40 px-7 py-3 text-sm text-bright hover:bg-plaster hover:text-charcoal"
               >
                 Empecemos una conversación
               </a>
@@ -404,10 +407,10 @@ export default function Page() {
             </p>
           </div>
           <div className="mt-14 grid gap-px overflow-hidden border hair bg-[rgba(200,212,220,0.08)] md:grid-cols-2 lg:grid-cols-3">
-            {PRODUCTS.map((p) => (
+            {PRODUCTS.map((p, i) => (
               <div
                 key={p.t}
-                className={`reveal flex flex-col bg-charcoal p-8 transition-colors duration-500 hover:bg-clay ${p.anchor ? "hud" : ""}`}
+                className={`reveal group relative flex flex-col bg-charcoal p-8 hover:bg-clay ${REVEAL_DELAY[i % 3]} ${p.anchor ? "hud" : ""}`}
               >
                 <div
                   style={{
@@ -441,15 +444,40 @@ export default function Page() {
                       href={PDF_BY_PRODUCT[p.t]}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex shrink-0 items-center gap-1 font-mono text-[11px] uppercase tracking-[0.14em]"
+                      aria-label={`Ver cotización de ${p.t}`}
+                      className="inline-flex shrink-0 items-center gap-1 font-mono text-[11px] uppercase tracking-[0.14em] after:absolute after:inset-0"
                       style={{ color: "var(--color-signal)" }}
                     >
-                      Cotización ↓
+                      Cotización
+                      <span className="transition-transform duration-200 group-hover:translate-y-0.5">
+                        ↓
+                      </span>
                     </a>
                   )}
                 </div>
               </div>
             ))}
+            {/* Cierra la grilla: quien no se ve en una caja también tiene por dónde seguir */}
+            <a
+              href="#cta"
+              className={`reveal group flex flex-col bg-charcoal p-8 hover:bg-clay md:col-span-2 lg:col-span-1 ${REVEAL_DELAY[PRODUCTS.length % 3]}`}
+            >
+              <h3 className="font-serif text-xl text-bright">¿Algo distinto?</h3>
+              <p className="mt-3 text-sm text-body/70">
+                Si lo tuyo no calza en estas cajas, cuéntanos qué necesitas y lo vemos juntos.
+              </p>
+              <div className="mt-auto flex items-center justify-end border-t hair pt-4">
+                <span
+                  className="inline-flex items-center gap-1 pt-5 font-mono text-[11px] uppercase tracking-[0.14em]"
+                  style={{ color: "var(--color-signal)" }}
+                >
+                  Hablemos
+                  <span className="transition-transform duration-200 group-hover:translate-x-0.5">
+                    →
+                  </span>
+                </span>
+              </div>
+            </a>
           </div>
         </div>
       </section>
@@ -541,7 +569,7 @@ export default function Page() {
               </div>
               <div>
                 <span style={{ color: "var(--color-signal)" }}>stack</span>: Next ·
-                Go · AWS · SST
+                Go · AWS · Terraform
               </div>
               <div>
                 <span style={{ color: "var(--color-signal)" }}>foco</span>: sistemas
@@ -592,7 +620,7 @@ export default function Page() {
             {/* Exwood */}
             <a
               href="/casos/exwood"
-              className="reveal group flex flex-col border hair bg-charcoal p-8 transition-colors duration-500 hover:bg-clay/40"
+              className="reveal group flex flex-col border hair bg-charcoal p-8 hover:bg-clay/40"
             >
               <div className="flex items-center justify-between gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -628,7 +656,7 @@ export default function Page() {
             {/* Forestal Foresol */}
             <a
               href="/casos/forestal-foresol"
-              className="reveal group flex flex-col border hair bg-charcoal p-8 transition-colors duration-500 hover:bg-clay/40"
+              className="reveal group flex flex-col border hair bg-charcoal p-8 hover:bg-clay/40"
             >
               <div className="flex items-center justify-between gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -731,8 +759,8 @@ export default function Page() {
               Cuéntanos qué tienes en mente y te escribimos de vuelta.
             </p>
           </div>
-          {sent ? (
-            <p className="reveal mt-10 font-mono text-sm" style={{ color: "var(--color-signal)" }}>
+          {status === "sent" ? (
+            <p role="status" className="state-enter mt-10 font-mono text-sm" style={{ color: "var(--color-signal)" }}>
               ● recibido — te escribiremos pronto.
             </p>
           ) : (
@@ -748,18 +776,20 @@ export default function Page() {
                 };
                 // En dev (sin endpoint) simulamos el envío para probar la UI.
                 if (!FORM_ENDPOINT) {
-                  setSent(true);
+                  setStatus("sent");
                   return;
                 }
+                setStatus("sending");
                 try {
                   const res = await fetch(FORM_ENDPOINT, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload),
                   });
-                  if (res.ok) setSent(true);
+                  if (res.ok) setStatus("sent");
+                  else setStatus(res.status === 429 ? "limited" : "error");
                 } catch {
-                  /* silencioso; se puede añadir manejo de error visible */
+                  setStatus("error");
                 }
               }}
               className="reveal mx-auto mt-10 flex max-w-md flex-col gap-4 text-left"
@@ -788,10 +818,18 @@ export default function Page() {
               />
               <button
                 type="submit"
-                className="self-start border border-plaster/40 px-7 py-2.5 text-sm text-bright transition-colors duration-300 hover:bg-body hover:text-charcoal"
+                disabled={status === "sending"}
+                className="press self-start border border-plaster/40 px-7 py-2.5 text-sm text-bright hover:bg-body hover:text-charcoal disabled:pointer-events-none disabled:opacity-60"
               >
-                Enviar
+                {status === "sending" ? "Enviando…" : "Enviar"}
               </button>
+              {(status === "error" || status === "limited") && (
+                <p role="alert" className="state-enter font-mono text-xs text-bright">
+                  {status === "limited"
+                    ? "Demasiados intentos. Espera unos minutos y vuelve a enviarlo."
+                    : "No pudimos enviarlo. Tu mensaje sigue aquí: inténtalo de nuevo."}
+                </p>
+              )}
             </form>
           )}
         </div>

@@ -56,7 +56,13 @@ export default function RootLayout({
       lang="es"
       className={`${inter.variable} ${notoSerif.variable} ${jetbrains.variable}`}
     >
-      <body className="grain">{children}</body>
+      <body className="grain">
+        {/* Sin JavaScript no corre el observador: el contenido debe verse igual. */}
+        <noscript>
+          <style>{`.reveal{opacity:1;transform:none}`}</style>
+        </noscript>
+        {children}
+      </body>
     </html>
   );
 }

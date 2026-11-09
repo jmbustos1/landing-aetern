@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Integraciones (herramientas + organismos que la empresa ya usa)
 const NODES = [
@@ -32,13 +32,25 @@ const R = 40; // radio en % del viewBox
 export default function AgentHub() {
   const [active, setActive] = useState(0);
   const [reduced, setReduced] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const m = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduced(m.matches);
-    if (m.matches) return;
-    const id = setInterval(() => setActive((a) => (a + 1) % NODES.length), 1500);
-    return () => clearInterval(id);
+    if (m.matches || !rootRef.current) return;
+    // Solo avanza mientras está en pantalla.
+    let id: ReturnType<typeof setInterval> | undefined;
+    const io = new IntersectionObserver(([e]) => {
+      clearInterval(id);
+      if (e.isIntersecting) {
+        id = setInterval(() => setActive((a) => (a + 1) % NODES.length), 1500);
+      }
+    });
+    io.observe(rootRef.current);
+    return () => {
+      clearInterval(id);
+      io.disconnect();
+    };
   }, []);
 
   const N = NODES.length;
@@ -48,7 +60,7 @@ export default function AgentHub() {
   });
 
   return (
-    <div className="relative mx-auto aspect-square w-full max-w-[520px]">
+    <div ref={rootRef} className="relative mx-auto aspect-square w-full max-w-[520px]">
       {/* Conexiones */}
       <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" aria-hidden>
         {pts.map((p, i) => (
@@ -87,13 +99,11 @@ export default function AgentHub() {
         ))}
       </svg>
 
-      {/* Chips de integraciones (fijos, con flote sutil) */}
+      {/* Chips de integraciones (fijos) */}
       {NODES.map((n, i) => (
         <div
           key={n}
-          className={`hub-chip absolute z-10 border px-2 py-1 font-mono text-[10px] whitespace-nowrap ${
-            reduced ? "" : "hub-float"
-          } ${active === i ? "text-bright" : "text-muted"}`}
+          className={`hub-chip absolute z-10 border px-2 py-1 font-mono text-[10px] whitespace-nowrap ${active === i ? "text-bright" : "text-muted"}`}
           style={{
             left: `${pts[i].x}%`,
             top: `${pts[i].y}%`,

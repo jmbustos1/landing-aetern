@@ -95,6 +95,7 @@ export default function InkCanvas() {
     ).matches;
 
     let raf = 0;
+    let io: IntersectionObserver | undefined;
     if (reduced) {
       // estampa fija bella: avanza en silencio y se queda quieto
       for (let i = 0; i < 520; i++) step();
@@ -103,11 +104,17 @@ export default function InkCanvas() {
         step();
         raf = requestAnimationFrame(loop);
       };
-      raf = requestAnimationFrame(loop);
+      // Solo dibuja mientras el hero está en pantalla.
+      io = new IntersectionObserver(([e]) => {
+        cancelAnimationFrame(raf);
+        if (e.isIntersecting) raf = requestAnimationFrame(loop);
+      });
+      io.observe(canvas);
     }
 
     return () => {
       cancelAnimationFrame(raf);
+      io?.disconnect();
       window.removeEventListener("resize", resize);
     };
   }, []);
