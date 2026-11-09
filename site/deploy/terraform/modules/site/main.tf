@@ -41,10 +41,12 @@ resource "aws_cloudfront_function" "rewrite" {
       var uri = req.uri;
       var host = req.headers.host ? req.headers.host.value : "";
       if (host === "www.${var.domain_name}") {
+        var q = req.querystring;
+        var qs = Object.keys(q).map(function (k) { return k + "=" + q[k].value; }).join("&");
         return {
           statusCode: 301,
           statusDescription: "Moved Permanently",
-          headers: { location: { value: "https://${var.domain_name}" + uri } },
+          headers: { location: { value: "https://${var.domain_name}" + uri + (qs ? "?" + qs : "") } },
         };
       }
       if (uri.endsWith("/")) {

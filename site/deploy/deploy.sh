@@ -10,6 +10,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 APP="$(cd "$HERE/.." && pwd)"      # carpeta de la app Next (house-blend)
 TFDIR="$HERE/terraform"
 PROFILE="${1:-${AWS_PROFILE:-default}}"
+export AWS_PROFILE="$PROFILE"   # también lo usa el backend remoto de Terraform
 
 echo "→ Leyendo outputs de Terraform…"
 ENDPOINT="$(cd "$TFDIR" && terraform output -raw form_endpoint)"
