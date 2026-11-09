@@ -1,0 +1,21 @@
+# Copia este archivo a terraform.tfvars y ajusta los valores.
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_profile  = "default"      # tu perfil de AWS CLI
+aws_region   = "us-east-1"    # dejar en us-east-1 (CloudFront + ACM viven ahí)
+project_name = "aetern"
+
+# Correo que recibe el aviso de cada mensaje del formulario (se verifica en SES).
+# Déjalo vacío para solo guardar en S3 sin aviso por email.
+notify_email = "hola@aetern.dev"
+
+# Alerta de costos (recomendado). Vacío la desactiva.
+alerta_email      = "hola@aetern.dev"
+alerta_limite_usd = "10"
+
+# ── Dominio propio (FASE 2, cuando compres aetern.dev) ──────────────────────
+# Déjalos vacíos para arrancar con el dominio de CloudFront.
+# Cuando tengas el dominio: crea un cert ACM en us-east-1, valídalo por DNS,
+# y pega aquí el dominio + el ARN del cert.
+# domain_name         = "aetern.dev"
+# acm_certificate_arn = "arn:aws:acm:us-east-1:XXXX:certificate/XXXX"

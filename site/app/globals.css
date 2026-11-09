@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/* ═══════ HOUSE BLEND — 80% calma wabi-sabi + 20% tech Arch sobrio ═══════ */
+@theme {
+  /* AETERN — navy nocturno + azure de marca (frío, lejos de Claude) */
+  --color-charcoal: #0f1320; /* fondo: navy profundo (como la hoja de marca) */
+  --color-clay: #161d2a; /* banda alterna: navy-slate */
+  --color-teak: #232d3f; /* profundidad: slate azulado */
+  --color-plaster: #a4b2bb; /* ceniza fría: hairlines / hover */
+  --color-bright: #e9eff2; /* titulares: blanco frío */
+  --color-body: #c2ccd3; /* cuerpo: gris frío (nunca #fff) */
+  --color-muted: #7c8993; /* captions, labels mono: slate-grey */
+  --color-signal: #6aa6e8; /* azure de marca — reino máquina (UNO) */
+  --color-seal: #3c5a86; /* índigo 藍 — reino mano/tradición */
+  --color-seal-hi: #7c9fd1; /* índigo claro sobre fondos oscuros (AA) */
+  --color-ember: #6aa6e8; /* chispas azure del fondo de tinta */
+
+  --font-serif: var(--font-noto-serif), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.85;
+  background-color: var(--color-charcoal);
+  color: var(--color-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* hairline reutilizable */
+.hair {
+  border-color: rgba(200, 212, 220, 0.1);
+}
+
+/* Grano de papel — feTurbulence a 0.02, fijo, no interactivo */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* El único punto que respira por viewport (teal) */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.breathe {
+  animation: breathe 3.6s ease-in-out infinite;
+}
+
+/* Divisor DIBUJADO (puntos de tinta), nunca <hr> */
+.ink-dots {
+  height: 3px;
+  background-image: radial-gradient(
+    circle,
+    var(--color-plaster) 1px,
+    transparent 1.4px
+  );
+  /* frío: ceniza azulada */
+  background-size: 16px 3px;
+  background-repeat: repeat-x;
+  opacity: 0.35;
+}
+
+/* Panel HUD biselado — dos esquinas cortadas (clip-path a mano, sin librería) */
+.hud {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 20px) 0,
+    100% 20px,
+    100% 100%,
+    20px 100%,
+    0 calc(100% - 20px)
+  );
+}
+
+/* Reveals lentos — respiración, no atención */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 1.05s cubic-bezier(0.25, 1, 0.25, 1),
+    transform 1.05s cubic-bezier(0.25, 1, 0.25, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Agent hub — señal que viaja por la línea hacia el centro */
+@keyframes hub-pulse {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+.hub-pulse {
+  stroke-dasharray: 12 88;
+  animation: hub-pulse 3s linear infinite;
+}
+/* Flote sutil de los chips (fijos, no orbitan) */
+@keyframes hub-float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%);
+  }
+  50% {
+    transform: translate(-50%, calc(-50% - 3px));
+  }
+}
+.hub-chip {
+  transform: translate(-50%, -50%);
+  transition:
+    color 0.6s ease,
+    border-color 0.6s ease;
+}
+.hub-float {
+  animation: hub-float 5.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-pulse,
+  .hub-float {
+    animation: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .breathe {
+    animation: none !important;
+    opacity: 0.7 !important;
+  }
+}

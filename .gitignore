@@ -1,0 +1,22 @@
+# ── Dependencias y build (regenerables) ──
+node_modules/
+.next/
+out/
+next-env.d.ts
+
+# ── Terraform ──
+# El state y las variables NUNCA van a git (pueden tener datos sensibles).
+# El lock (.terraform.lock.hcl) SÍ se versiona, para reproducibilidad.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+**/.build/
+
+# ── Scratch de exploración (repos clonados, si vuelven a aparecer) ──
+_referencias/
+
+# ── Sistema ──
+.DS_Store
+Thumbs.db
+*.log
